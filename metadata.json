@@ -1,0 +1,5 @@
+{
+  "name": "DocuVoice Interpreter",
+  "description": "An accessible document reader that extracts text from PDFs or images, translates it to a preferred language, and reads it aloud with adjustable speed.",
+  "requestFramePermissions": []
+}
