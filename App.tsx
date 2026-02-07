@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Upload, FileText, CheckCircle, Languages, AlertCircle, Loader2, Zap, BrainCircuit, History, Download, X, Trash2, Play, MapPin, ExternalLink, Building2, Sparkles, FileBadge, Star, BookOpen, ListTodo, Copy, CheckSquare, Type, Minus, Plus } from 'lucide-react';
+import { Upload, FileText, CheckCircle, Languages, AlertCircle, Loader2, Zap, BrainCircuit, History, Download, X, Trash2, Play, MapPin, ExternalLink, Building2, Sparkles, FileBadge, Star, BookOpen, ListTodo, Copy, CheckSquare, Type, Minus, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { SUPPORTED_LANGUAGES, UI_TRANSLATIONS } from './constants';
 import { AppStatus, UploadedFile, HistoryItem, LocationInfo, OfficialDocInfo, Highlight } from './types';
 import { translateDocument, generateSpeech, decodeAudioData, resolveLocation } from './services/geminiService';
@@ -25,6 +25,9 @@ const App: React.FC = () => {
   // Font Size State
   const [fontSize, setFontSize] = useState<number>(18); // Default 18px (text-lg)
 
+  // Language Selection State
+  const [showAllLanguages, setShowAllLanguages] = useState<boolean>(false);
+
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState<boolean>(false);
@@ -38,6 +41,9 @@ const App: React.FC = () => {
   // Get current UI translation
   const ui = UI_TRANSLATIONS[targetLang] || UI_TRANSLATIONS['en'];
   const isRTL = targetLang === 'ar' || targetLang === 'ur';
+  
+  // Languages to display
+  const displayedLanguages = showAllLanguages ? SUPPORTED_LANGUAGES : SUPPORTED_LANGUAGES.slice(0, 10);
 
   // Load history on mount
   useEffect(() => {
@@ -403,7 +409,7 @@ const App: React.FC = () => {
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Header */}
-      <header className="max-w-3xl w-full flex items-center justify-between mb-10 relative z-10">
+      <header className="max-w-3xl w-full flex items-center justify-between mb-8 relative z-10">
         <div></div> {/* Spacer */}
         <div className="text-center">
           <h1 className="text-4xl font-extrabold text-indigo-900 mb-2 tracking-tight">
@@ -421,6 +427,46 @@ const App: React.FC = () => {
           <History size={24} />
         </button>
       </header>
+
+      {/* Language Selection Bar (New) */}
+      <div className="max-w-3xl w-full mb-8 z-0">
+        <p className="text-center text-slate-500 mb-4 text-sm font-bold uppercase tracking-wide flex items-center justify-center gap-2">
+          <Languages size={16} />
+          {ui.selectLanguage}
+        </p>
+        <div className="flex flex-wrap justify-center gap-2 px-2">
+           {displayedLanguages.map((lang) => (
+             <button
+               key={lang.code}
+               onClick={() => {
+                 setTargetLang(lang.code);
+                 if (status === AppStatus.READY) {
+                    // Optionally reset if user changes language after processing, or allow re-process
+                    // For now, let's keep it simple. If they want to re-translate, they hit the button below.
+                 }
+               }}
+               disabled={status === AppStatus.TRANSLATING || status === AppStatus.GENERATING_AUDIO}
+               className={`px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm border 
+                 ${targetLang === lang.code 
+                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-md transform scale-105 ring-2 ring-indigo-200' 
+                   : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700'
+                 } disabled:opacity-50 disabled:cursor-not-allowed`}
+             >
+               {lang.nativeName}
+             </button>
+           ))}
+           <button
+             onClick={() => setShowAllLanguages(!showAllLanguages)}
+             className="px-3 py-2 rounded-full text-xs font-bold text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition-colors flex items-center gap-1 border border-transparent hover:border-slate-200"
+           >
+             {showAllLanguages ? (
+               <><ChevronUp size={14} /> {ui.showLess}</>
+             ) : (
+               <><ChevronDown size={14} /> {ui.showMore}</>
+             )}
+           </button>
+        </div>
+      </div>
 
       {/* History Sidebar */}
       <div 
@@ -542,7 +588,7 @@ const App: React.FC = () => {
 
       <main className="max-w-3xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200 relative z-0">
         
-        {/* Step 1: Upload */}
+        {/* Upload Section (Simplified) */}
         <div className="p-8 border-b border-slate-100">
           <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
             <span className="bg-slate-100 p-2 rounded-lg text-slate-600"><Upload size={20} /></span>
@@ -584,34 +630,10 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Step 2: Language Selection */}
-        <div className="p-8 border-b border-slate-100 bg-slate-50/50">
-           <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <span className="bg-slate-100 p-2 rounded-lg text-slate-600"><Languages size={20} /></span>
-            {ui.step2}
-          </h2>
-          
-          <div className="relative">
-            <select
-              value={targetLang}
-              onChange={(e) => setTargetLang(e.target.value)}
-              className="w-full appearance-none bg-white border border-slate-300 text-slate-700 py-4 px-4 pr-8 rounded-xl leading-tight focus:outline-none focus:bg-white focus:border-indigo-500 font-medium text-lg shadow-sm"
-              disabled={status === AppStatus.TRANSLATING || status === AppStatus.GENERATING_AUDIO || status === AppStatus.RESOLVING_LOCATION}
-            >
-              {SUPPORTED_LANGUAGES.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.nativeName} ({lang.name})
-                </option>
-              ))}
-            </select>
-            <div className={`pointer-events-none absolute inset-y-0 ${isRTL ? 'left-0' : 'right-0'} flex items-center px-4 text-slate-500`}>
-              <Languages size={16} />
-            </div>
-          </div>
-        </div>
+        {/* Removed Step 2: Choose Language (Moved to Header) */}
 
         {/* Action Button & Results */}
-        <div className="p-8">
+        <div className="p-8 bg-slate-50/30">
           {errorMsg && (
             <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-center gap-2 border border-red-100">
               <AlertCircle size={20} />
